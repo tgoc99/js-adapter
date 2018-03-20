@@ -896,7 +896,7 @@ export class _Window extends Base {
      * @tutorial Window.resizeBy
      * @return {Promise.<void>}
      */
-    public resizeBy(deltaWidth: number, deltaHeight: number, anchor: string): Promise<void> {
+    public resizeBy(deltaWidth: number, deltaHeight: number, anchor?: string): Promise<void> {
         return this.wire.sendAction('resize-window-by', Object.assign({}, this.identity, {
             deltaWidth: Math.floor(deltaWidth),
             deltaHeight: Math.floor(deltaHeight),
