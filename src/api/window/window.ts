@@ -10,7 +10,7 @@ import Transport from '../../transport/transport';
 export default class _WindowModule extends Bare {
     /**
      * Returns a Window object that represents an existing window.
-     * @param { Identity } indentity
+     * @param { Identity } identity
      * @return {Promise.<_Window>}
      */
     public wrap(identity: Identity): Promise<_Window> {
