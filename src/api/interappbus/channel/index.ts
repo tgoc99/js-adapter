@@ -130,26 +130,23 @@ export class Channel extends EmitterBase<ChannelEvents> {
         return false;
     }
     private async processChannelAction (msg: ChannelMessage) {
-        const { clientIdentity, senderIdentity, providerIdentity, action, ackToSender, payload } = msg.payload;
+        const { ackToSender, action, clientIdentity, payload, providerIdentity: { channelId, channelName }, senderIdentity } = msg.payload;
         const isConnection = msg.action === 'process-channel-connection';
-        const key = providerIdentity.channelId;
-        const channelBus = this.channelMap.get(key);
+        const channelBus = this.channelMap.get(channelId);
         try {
-            if (!channelBus) {
+            let result;
+            if (isConnection && channelBus instanceof ChannelProvider) {
+                result = await channelBus.processConnection(clientIdentity, payload);
+            } else if (!isConnection && channelBus instanceof ChannelClient) {
+                result = await channelBus.processAction(action, payload, senderIdentity);
+            } else if (!channelBus) {
                 const errorMessage = isConnection ?
-                    `Channel "${providerIdentity.channelName}" has been destroyed.` :
+                    `Channel "${channelName}" has been destroyed.` :
                     `Client connection with identity ${JSON.stringify(this.wire.me)} no longer connected.`;
                 throw new Error(errorMessage);
-            } else {
-                ackToSender.payload.payload = ackToSender.payload.payload || {};
-                let result;
-                if (isConnection && channelBus instanceof ChannelProvider) {
-                    result = await channelBus.processConnection(clientIdentity, payload);
-                } else if (!isConnection && channelBus instanceof ChannelClient) {
-                    result = await channelBus.processAction(action, payload, senderIdentity);
-                }
-                ackToSender.payload.payload.result = result;
             }
+            ackToSender.payload.payload = ackToSender.payload.payload || {};
+            ackToSender.payload.payload.result = result;
         } catch (e) {
             ackToSender.payload.success = false;
             ackToSender.payload.reason = e.message;
