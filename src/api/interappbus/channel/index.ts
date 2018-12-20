@@ -131,11 +131,11 @@ export class Channel extends EmitterBase<ChannelEvents> {
     }
     private async processChannelAction (msg: ChannelMessage) {
         const { clientIdentity, senderIdentity, providerIdentity, action, ackToSender, payload } = msg.payload;
+        const isConnection = msg.action === 'process-channel-connection';
         const key = providerIdentity.channelId;
-        const bus = this.channelMap.get(key);
-        const isConnection = action === 'process-channel-connection';
+        const channelBus = this.channelMap.get(key);
         try {
-            if (!bus) {
+            if (!channelBus) {
                 const errorMessage = isConnection ?
                     `Channel "${providerIdentity.channelName}" has been destroyed.` :
                     `Client connection with identity ${JSON.stringify(this.wire.me)} no longer connected.`;
@@ -143,10 +143,10 @@ export class Channel extends EmitterBase<ChannelEvents> {
             } else {
                 ackToSender.payload.payload = ackToSender.payload.payload || {};
                 let result;
-                if (isConnection && bus instanceof ChannelProvider) {
-                    result = await bus.processConnection(clientIdentity, payload);
-                } else if (!isConnection && bus instanceof ChannelClient) {
-                    result = await bus.processAction(action, payload, senderIdentity);
+                if (isConnection && channelBus instanceof ChannelProvider) {
+                    result = await channelBus.processConnection(clientIdentity, payload);
+                } else if (!isConnection && channelBus instanceof ChannelClient) {
+                    result = await channelBus.processAction(action, payload, senderIdentity);
                 }
                 ackToSender.payload.payload.result = result;
             }
