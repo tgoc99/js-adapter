@@ -123,56 +123,37 @@ export class Channel extends EmitterBase<ChannelEvents> {
     }
 
     public onmessage = (msg: ChannelMessage) => {
-        if (msg.action === 'process-channel-message') {
-            this.processChannelMessage(msg);
-            return true;
-        } else if (msg.action === 'process-channel-connection') {
-            this.processChannelConnection(msg);
+        if (msg.action === 'process-channel-message' || msg.action === 'process-channel-connection') {
+            this.processChannelAction(msg);
             return true;
         }
         return false;
     }
-    private async processChannelMessage (msg: ChannelMessage) {
-        const { senderIdentity, providerIdentity, action, ackToSender, payload } = msg.payload;
+    private async processChannelAction (msg: ChannelMessage) {
+        const { clientIdentity, senderIdentity, providerIdentity, action, ackToSender, payload } = msg.payload;
         const key = providerIdentity.channelId;
         const bus = this.channelMap.get(key);
-        if (!bus) {
-            ackToSender.payload.success = false;
-            ackToSender.payload.reason = `Client connection with identity ${JSON.stringify(this.wire.me)} no longer connected.`;
-            return this.wire.sendRaw(ackToSender);
-        }
+        const isConnection = action === 'process-channel-connection';
         try {
-            const res = await bus.processAction(action, payload, senderIdentity);
-            ackToSender.payload.payload = ackToSender.payload.payload || {};
-            ackToSender.payload.payload.result = res;
-            this.wire.sendRaw(ackToSender);
-        } catch (e) {
-            ackToSender.payload.success = false;
-            ackToSender.payload.reason = e.message;
-            this.wire.sendRaw(ackToSender);
-        }
-    }
-    private async processChannelConnection (msg: ChannelMessage) {
-        const { clientIdentity, providerIdentity, ackToSender, payload } = msg.payload;
-        const key = providerIdentity.channelId;
-        const bus = this.channelMap.get(key);
-        if (!bus) {
-            ackToSender.payload.success = false;
-            ackToSender.payload.reason = `Channel "${providerIdentity.channelName}" has been destroyed.`;
-            return this.wire.sendRaw(ackToSender);
-        }
-        try {
-            if (!(bus instanceof ChannelProvider)) {
-                throw Error('Cannot connect to a channel client');
+            if (!bus) {
+                const errorMessage = isConnection ?
+                    `Channel "${providerIdentity.channelName}" has been destroyed.` :
+                    `Client connection with identity ${JSON.stringify(this.wire.me)} no longer connected.`;
+                throw new Error(errorMessage);
+            } else {
+                ackToSender.payload.payload = ackToSender.payload.payload || {};
+                let result;
+                if (isConnection && bus instanceof ChannelProvider) {
+                    result = await bus.processConnection(clientIdentity, payload);
+                } else if (!isConnection && bus instanceof ChannelClient) {
+                    result = await bus.processAction(action, payload, senderIdentity);
+                }
+                ackToSender.payload.payload.result = result;
             }
-            const res = await bus.processConnection(clientIdentity, payload);
-            ackToSender.payload.payload = ackToSender.payload.payload || {};
-            ackToSender.payload.payload.result = res;
-            this.wire.sendRaw(ackToSender);
         } catch (e) {
             ackToSender.payload.success = false;
             ackToSender.payload.reason = e.message;
-            this.wire.sendRaw(ackToSender);
         }
+        this.wire.sendRaw(ackToSender);
     }
 }
