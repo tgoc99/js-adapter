@@ -554,6 +554,34 @@ export class Application extends EmitterBase<ApplicationEvents> {
     }
 
     /**
+     * Sets new application's shortcut configuration. Windows only.
+     * @param { ShortCutConfig } config New application's shortcut configuration.
+     * @param { boolean } [config.desktop] - Enable/disable desktop shortcut.
+     * @param { boolean } [config.startMenu] - Enable/disable start menu shortcut.
+     * @param { boolean } [config.systemStartup] - Enable/disable system startup shortcut.
+     * @return {Promise.<void>}
+     * @tutorial Application.setShortcuts
+     */
+    public setUserDefinedOptions(config: any): Promise<void> {
+        return this.wire.sendAction('set-user-defined-options', Object.assign({}, { data: config }, this.identity))
+            .then(() => undefined);
+    }
+
+        /**
+     * Sets new application's shortcut configuration. Windows only.
+     * @param { ShortCutConfig } config New application's shortcut configuration.
+     * @param { boolean } [config.desktop] - Enable/disable desktop shortcut.
+     * @param { boolean } [config.startMenu] - Enable/disable start menu shortcut.
+     * @param { boolean } [config.systemStartup] - Enable/disable system startup shortcut.
+     * @return {Promise.<void>}
+     * @tutorial Application.setShortcuts
+     */
+    public createTray(config: any): Promise<void> {
+        return this.wire.sendAction('create-tray', Object.assign({}, { data: config }, this.identity))
+            .then(() => undefined);
+    }
+
+    /**
      * Sets the zoom level of the application. The original size is 0 and each increment above or below represents zooming 20%
      * larger or smaller to default limits of 300% and 50% of original size, respectively.
      * @param { number } level The zoom level

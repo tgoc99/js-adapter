@@ -2,10 +2,11 @@ Adds a customizable icon in the system tray and notifies the application when cl
 # Example
 ```js
 async function setTrayIcon() {
-    const iconUrl = "http://cdn.openfin.co/assets/testing/icons/circled-digit-one.png";
     const app = await fin.Application.getCurrent();
+    app.on('tray-icon-clicked', console.log);
+    const iconUrl = "http://cdn.openfin.co/assets/testing/icons/circled-digit-one.png";
     return await app.setTrayIcon(iconUrl);
 }
 
-setTrayIcon().then(clickInfo => console.log(clickInfo)).catch(err => console.log(err));
+setTrayIcon().then(() => console.log('success')).catch(console.error);
 ```
